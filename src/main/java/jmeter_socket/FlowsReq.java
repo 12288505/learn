@@ -7,15 +7,28 @@ public class FlowsReq {
 	private int setcode;
 	private String code;
 	private int offset;
-	private int num;// 璇锋眰涓暟
+	private int num;// 请求个数
 	private int resrv;
 
-	// 璧勯噾娴佸悜
+	// 资金流向
 	private int req;
-	private int startxh;// 璧峰搴忓彿
-	private int sorttype;// 鎺掑簭绫诲瀷
-	private int coltype;// 鎺掑簭鐨勫垪锛屼唬鐮佺殑鍒椾负40锛屼緷娆＄被鎺?
-	private int daytype;// 1 褰撴棩 3涓夋棩 5浜旀棩 10鍗佹棩
+	private int startxh;// 起始序号
+	private int sorttype;// 排序类型
+	private int coltype;// 排序的列，代码的列为40，依次类推
+	private int daytype;
+
+	// 3.4自选DDE
+	private String codehead;
+
+	public String getCodehead() {
+
+		return codehead;
+	}
+
+	public void setCodehead(String codehead) {
+
+		this.codehead = codehead;
+	}
 
 	public int getReq() {
 

@@ -57,8 +57,44 @@ public class Main extends ClientSock {
 		case 4226:
 			resBody = Protocol4226();
 			break;
-
+		case 4400:
+			resBody = Protolcol4400();
+			break;
+		case 4410:
+			resBody = Protolcol4410();
+			break;
+		case 4411:
+			resBody = Protolcol4411();
+			break;
+		case 4401:
+			resBody = Protolcol4401();
+			break;
+		case 4402:
+			resBody = Protolcol4402();
+			break;
+		case 4403:
+			resBody = Protolcol4403();
+			break;
+		case 4404:
+			resBody = Protolcol4404();
+			break;
+		case 4405:
+			resBody = Protolcol4405();
+			break;
+		case 4406:
+			resBody = Protolcol4406();
+			break;
+		case 4407:
+			resBody = Protolcol4407();
+			break;
+		case 4408:
+			resBody = Protolcol4408();
+			break;
+		case 4409:
+			resBody = Protolcol4409();
+			break;
 		}
+
 		System.out.println(resBody);
 		return resBody;
 	}
@@ -66,10 +102,9 @@ public class Main extends ClientSock {
 	// 监控4201协议 热门板块
 	public String Protocol4201() {
 
-		setCode("882059");
-		setReq((short) 4201);
+		String strCode = "882098";
 		String resultStr = "";
-		HQResultData resultData = reqAreaJSON(123, 2, getReq(), "882059");
+		HQResultData resultData = reqAreaJSON(ClientSock.mainID, ClientSock.assID, strCode);
 		byte[] temp = resultData.getAnsBuf();
 		resultStr = FormatTransfer.bytesToString(temp);
 		body = resultStr;
@@ -260,4 +295,180 @@ public class Main extends ClientSock {
 		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
 		return body;
 	}
+
+	public String Protolcol4400() {
+
+		short gpId = 530;
+		// 创建 分类行情请求
+		MultiReq request = new MultiReq();
+		request.setSetdomain(Const.hkSetcode); // 市场分类
+		request.setColtype(Const.SETDOMAIN_HK); // 股票栏目代码
+		request.setStartxh((short) 0);
+		request.setWantnum((short) 100); // 最多200
+		request.setSorttype((short) 2);
+		request.setBlockid(Const.BLOCKID_SH_HK);
+
+		HQResultData resultData = reqNewMultiJSON(2, 3, request);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4400协议
+	public String Protolcol4410() {
+
+		short gpId = 530;
+		// 创建 分类行情请求
+		MultiReq request = new MultiReq();
+		request.setSetdomain(Const.hkSetcode); // 市场分类
+		request.setColtype(Const.SETDOMAIN_HK); // 股票栏目代码
+		request.setStartxh((short) 0);
+		request.setWantnum((short) 100); // 最多200
+		request.setSorttype((short) 2);
+		request.setBlockid(Const.BLOCKID_SH_HK);
+
+		HQResultData resultData = reqNewMultiJSON(2, 3, request);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	public String Protolcol4411() {
+
+		// TODO Auto-generated method stub
+
+		short wantnum = 100;
+		String codehead = " 1603169";
+		HQResultData resultData = reqCombExpandJSON(2, 3, codehead, wantnum);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4401协议 （多股DDE查询）
+	public String Protolcol4401() {
+
+		FlowsReq req = new FlowsReq();
+		String codehead = " 1603169";
+		req.setCodehead(codehead);
+		req.setNum(100);
+		HQResultData resultData = reqOptionalDDEJSON(2, 3, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4408多股主力资金流查询
+	public String Protolcol4408() {
+
+		FlowsReq req = new FlowsReq();
+		String codehead = "002492";
+		req.setCodehead(codehead);
+		req.setNum(100);
+		HQResultData resultData = reqOptionalFundJSON(2, 3, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4402协议： 拖拉机单个股列表
+	public String Protolcol4402() {
+
+		MultiReq req = new MultiReq();
+		req.setWantnum((short) 100);
+		req.setStartxh((short) 0);
+		req.setSortcol((short) 1);
+		req.setSorttype((short) 1);
+
+		HQResultData resultData = reqTractorListJSON(2, 3, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4403协议： 个股拖拉机单明细
+	public String Protolcol4403() {
+
+		MultiReq req = new MultiReq();
+		String code = "601991";
+		req.setSetCode(Const.shSetcode);
+		req.setCode(code);
+		req.setWantnum((short) (100));
+		req.setStartxh((short) 0);
+		req.setSortcol((short) 1);
+		req.setSorttype((short) 1);
+		HQResultData resultData = reqTractorDetailJSON(2, 3, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+
+		return body;
+	}
+
+	// 监控4404 顶级挂单个股列表
+	public String Protolcol4404() {
+
+		MultiReq req = new MultiReq();
+		req.setWantnum((short) (100));
+		req.setStartxh((short) 0);
+		req.setSortcol((short) 1);
+		req.setSorttype((short) 1);
+		HQResultData resultData = reqTopBillListJSON(2, 3, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4405 个股顶级挂单明细
+	public String Protolcol4405() {
+
+		MultiReq req = new MultiReq();
+		String code = "603001";
+		req.setSetCode(Const.shSetcode);
+		req.setCode(code);
+		req.setWantnum((short) (100));
+		req.setStartxh((short) 0);
+		req.setSortcol((short) 1);
+		req.setSorttype((short) 1);
+		HQResultData resultData = reqTopBillDetailJSON(2, 3, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+
+		return body;
+	}
+
+	// 监控4406 主力撤单个股列表
+	public String Protolcol4406() {
+
+		MultiReq req = new MultiReq();
+		req.setWantnum((short) 100);
+		req.setStartxh((short) 0);
+		req.setSortcol((short) 1);
+		req.setSorttype((short) 1);
+		HQResultData resultData = reqCancelBillListJSON(2, 4, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4407 个股主力撤单明细
+	public String Protolcol4407() {
+
+		MultiReq req = new MultiReq();
+		String code = "600757";
+		req.setSetCode(Const.shSetcode);
+		req.setCode(code);
+		req.setWantnum((short) (100));
+		req.setStartxh((short) 0);
+		req.setSortcol((short) 1);
+		req.setSorttype((short) 1);
+		HQResultData resultData = reqCancelBillDetailJSON(2, 3, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
+	// 监控4409 （A+H比价）
+	public String Protolcol4409() {
+
+		MultiReq req = new MultiReq();
+		int mainID = 2;
+		int assID = 3;
+		req.setWantnum((short) (100));
+		req.setStartxh((short) 0);
+		req.setSortcol((short) 1);
+		req.setSorttype((short) 1);
+		HQResultData resultData = reqAHMultiJSON(mainID, assID, req);
+		body = FormatTransfer.bytesToString(resultData.getAnsBuf());
+		return body;
+	}
+
 }

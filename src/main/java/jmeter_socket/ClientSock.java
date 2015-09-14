@@ -15,29 +15,35 @@ import com.google.gson.Gson;
 
 public class ClientSock implements Const {
 
-	public short DEFAULT_K_TYPE = 4;
+	public short DEFAULT_K_TYPE = 4;// 默认请求K线类�? 日K
 	public short DEFAULT_K_MULNUM = 0;
-	public short DEFALUT_K_STARTXH = 0;
+	public short DEFALUT_K_STARTXH = 0;// 偏移�?
+	private static short DEFAUL_CODE = 0;
 	private static byte REQ_DEFAULT_VERSION = 12;
 	private static byte REQ_DEFALUT_VALUE = 0;
 	private String DEFAULT_CODESTR = "000001";
 	private short DEFAULT_CODE = 0;
-	private String host = "120.26.66.242";
+	private String host = "120.26.66.242"; // 120.26.66.242
 	private int port = 9999;
+	public static int mainID = 0;
+	public static int assID = 0;
+	private short Short_Len = 2;
+	// private static short req = 4201 ; //要监测的协议�?
 	private static DataOutputStream dos;
 	private static DataInputStream dis;
-
 	private byte[] datacache;
 	private Socket mSocket = null;
-	private static boolean flag = false;
+	private static boolean flag = false;// 断开重连请求刷新界面
 	private String code;
-	private short req;
+	private short req; // 协议�?
 
+	// 设置协议�?
 	public void setReq(short req) {
 
 		this.req = req;
 	}
 
+	// 返回协议�?
 	public short getReq() {
 
 		return this.req;
@@ -53,35 +59,45 @@ public class ClientSock implements Const {
 		this.code = code;
 	}
 
+	// 创建包头
 	public byte[] getReqPack(int mainID, int assID, byte[] reqBody) {
 
 		ReqHeader head_req = new ReqHeader();
 		short len = (short) reqBody.length;
-		head_req.setRawLen(len);
-		head_req.setPacketLen(len);
-		head_req.setVersion(REQ_DEFAULT_VERSION);
-		head_req.setCompressed(REQ_DEFALUT_VALUE);
-		head_req.setEncrypted(REQ_DEFALUT_VALUE);
-		head_req.setReserved(REQ_DEFALUT_VALUE);
+		head_req.setRawLen(len); // 原始数据长度
+		head_req.setPacketLen(len); // 压缩之后的数据长�?
+		head_req.setVersion(REQ_DEFAULT_VERSION); // REQ_DEFAULT_VERSION ？？？？ 默认�?12
+		head_req.setCompressed(REQ_DEFALUT_VALUE); // REQ_DEFALUT_VALUE ？？？？ 0
+		head_req.setEncrypted(REQ_DEFALUT_VALUE); // REQ_DEFALUT_VALUE 0
+		head_req.setReserved(REQ_DEFALUT_VALUE); // REQ_DEFALUT_VALUE 0
 		head_req.setMainID(mainID);
 		head_req.setAssisID(assID);
 		head_req.setPriority(REQ_DEFALUT_VALUE);
+		// 请求配置包体部分的字节数�?,从TagReqHeader_Request类中获取
 		byte[] head = head_req.getTagReqHeader();
+		// 用包头包体的总长�? 初始化发送数据包 字节数组
 		byte[] packet = new byte[head.length + reqBody.length];
+		// 填充发�?�数据包
 		System.arraycopy(head, 0, packet, 0, head.length);
 		System.arraycopy(reqBody, 0, packet, head.length, reqBody.length);
 		return packet;
 	}
 
+	// 连接服务�?
 	public boolean connect() {
 
+		// boolean falg ;
 		try {
 			closeServer();
 			mSocket = new Socket();
 			mSocket.setReuseAddress(true);
 			mSocket.setTcpNoDelay(true);
+			// 如果输入流等�?5000毫秒还未获得服务端发送数据，则提示超时，0为永不超�?
 			mSocket.setSoTimeout(5000);
+			// 关闭socket时，底层socket不会直接关闭，会延迟�?会，直到发�?�完�?有数�?
+			// 等待10秒再关闭底层socket连接�?0为立即关闭底层socket连接
 			mSocket.setSoLinger(true, 0);
+			// 设置性能参数，可设置任意整数，数值越大，相应的参数重要�?�越高（连接时间，延迟，带宽�?
 			mSocket.setPerformancePreferences(3, 2, 1);
 
 			InetSocketAddress isa = new InetSocketAddress(host, port);
@@ -97,6 +113,9 @@ public class ClientSock implements Const {
 		return true;
 	}
 
+	/**
+	 * 关闭socket连接
+	 */
 	private void closeServer() {
 
 		try {
@@ -107,6 +126,7 @@ public class ClientSock implements Const {
 		}
 	}
 
+	// 向服务器发�?�请求包
 	public HQResultData buildRequest(byte[] lpBuf) {
 
 		HQResultData hqRD = new HQResultData();
@@ -128,8 +148,11 @@ public class ClientSock implements Const {
 					hqRD.setAssID(head_ans.getAssisID());
 					byte[] tempByte = new byte[Const.ANSBUFFER_LEN];
 					int i = 0;
-					int pos = 0;
+					int pos = 0; // 读取到qqhq_b数组中的位置
 					while ((i = dis.read(tempByte, pos, length - pos)) != -1) {
+						// 可能有网络延迟，循环读取完数�?
+						// Log.d(TAG, "reading.." + "pos..." + pos + "..i.." +
+						// i);
 						pos += i;
 						if (pos == length)
 							break;
@@ -171,29 +194,37 @@ public class ClientSock implements Const {
 
 	private HQResultData buildJSONREQ(int mainID, int assID, short req, String jsonstr) {
 
-		// if (mSocket.isClosed() || !mSocket.isConnected() || mSocket.isInputShutdown() || mSocket.isOutputShutdown())
+		// if ( mSocket.isClosed() ||!mSocket.isConnected() /*|| mSocket.isInputShutdown() ||
+		// mSocket.isOutputShutdown()*/)
 		// {
 		connect();
 		// }
 		byte[] jsonbuf = FormatTransfer.stringToBytes(jsonstr);
 		byte[] buf = new byte[jsonbuf.length + Short_LEN];
-		int pos = 0;
-		System.arraycopy(FormatTransfer.toLH(req), 0, buf, pos, Short_LEN);
+		int pos = 0; // 插入buf数组的位�?
+		System.arraycopy(FormatTransfer.toLH(req), 0, buf, pos, Short_LEN); // Short_LEN short 长度 2个字�?
 		pos += Short_LEN;
 		System.arraycopy(jsonbuf, 0, buf, pos, jsonbuf.length);
-		byte[] result = getReqPack(mainID, assID, buf);
-		return buildRequest(result);
+		byte[] result = getReqPack(mainID, assID, buf); // 创建包头
+		return buildRequest(result); // 给服务器发�?�请�?
 	}
 
-	public HQResultData reqAreaJSON(int mainID, int assID, short req, String code2) {
+	/**
+	 * @function 热门板块
+	 * @param mainID
+	 * @param assID
+	 * @param code
+	 * @return
+	 */
+	public HQResultData reqAreaJSON(int mainID, int assID, String code) {
 
 		Gson gson = new Gson();
 		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("1", code2);
-
-		return buildJSONREQ(mainID, assID, req, gson.toJson(map));
+		map.put("1", code);
+		return buildJSONREQ(mainID, assID, EMB_HOTAREA_NREQ, gson.toJson(map));
 	}
 
+	// 请求组合行情 codehead 市场代码 + 股票代码
 	public HQResultData reqCombJSON(int mainID, int assID, String codehead, short wantnum) {
 
 		Gson gson = new Gson();
@@ -232,6 +263,13 @@ public class ClientSock implements Const {
 			bye[pos + i] = 0;
 	}
 
+	/**
+	 * @function 请求行情列表 4203
+	 * @param mainID
+	 * @param assID
+	 * @param request
+	 * @return
+	 */
 	public HQResultData reqMultiJSON(int mainID, int assID, MultiReq request) {
 
 		Gson gson = new Gson();
@@ -245,6 +283,13 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_MULTIHQ_NREQ, gson.toJson(map));
 	}
 
+	/**
+	 * @function 请求行情列表(�?)
+	 * @param mainID
+	 * @param assID
+	 * @param request
+	 * @return
+	 */
 	public HQResultData reqMultiSimpleJSON(int mainID, int assID, MultiReq request) {
 
 		Gson gson = new Gson();
@@ -258,6 +303,15 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_MULTIHQ_NREQ_SIMPLE, gson.toJson(map));
 	}
 
+	/**
+	 * 走势�?
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param codestr
+	 * @param setcodestr
+	 * @return
+	 */
 	public HQResultData reqLChartJSON(int mainID, int assID, String codestr, String setcodestr) {
 
 		LineChartReq request = new LineChartReq();
@@ -271,6 +325,15 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_ZST_NREQ, gson.toJson(map));
 	}
 
+	/**
+	 * K线图
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param codestr
+	 * @param setcodestr
+	 * @return
+	 */
 	public HQResultData reqKChartJSON(int mainID, int assID, String codestr, String setcodestr, short ktype, short startxh,
 			short reqnum, boolean btg) {
 
@@ -287,6 +350,22 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_FXT_NREQ, gson.toJson(map));
 	}
 
+	/**
+	 * K线图
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param codestr
+	 *            股票代码
+	 * @param setcodestr
+	 * @param ktype
+	 *            K线类�?
+	 * @param startxh
+	 *            序号
+	 * @param reqnum
+	 *            请求K线的个数
+	 * @return
+	 */
 	public HQResultData reqKChart(int mainID, int assID, String codestr, String setcodestr, short ktype, short startxh,
 			short reqnum) {
 
@@ -298,8 +377,8 @@ public class ClientSock implements Const {
 		request.setLinetype(ktype > -1 ? ktype : DEFAULT_K_TYPE);
 		request.setMulnum(DEFAULT_K_MULNUM);
 		request.setStartxh(startxh > 0 ? startxh : DEFALUT_K_STARTXH);
-		request.setWantnum(reqnum);
-		int pos = 0;
+		request.setWantnum(reqnum);// 请求K线个�?
+		int pos = 0; // 插入buf数组的位�?
 		System.arraycopy(FormatTransfer.toLH(request.getReq()), 0, buf, pos, Short_LEN);
 		pos += Short_LEN;
 		System.arraycopy(FormatTransfer.toLH(request.getSetcode()), 0, buf, pos, Short_LEN);
@@ -328,6 +407,16 @@ public class ClientSock implements Const {
 			bye[pos + i] = 0;
 	}
 
+	/**
+	 * @function 请求[明细]数据
+	 * @param arg1
+	 * @param arg2
+	 * @param sETCODE_STR
+	 * @param cODE_STR
+	 * @param tICK_REQ_STARTXH
+	 * @param tICK_REQ_WANTNUM
+	 * @return
+	 */
 	public HQResultData reqTickJSON(int mainID, int assID, short setcode, String code, short startxh, short wantnum) {
 
 		Gson gson = new Gson();
@@ -339,6 +428,10 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_TICK_NREQ, gson.toJson(map));
 	}
 
+	/**
+	 * @function 组合行情同时请求几个股票行情时使�?(�?)
+	 * @return
+	 */
 	public HQResultData reqCombSimpleJSON(int mainID, int assID, String codehead, short wantnum) {
 
 		Gson gson = new Gson();
@@ -348,6 +441,13 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_COMBHQ_NREQ_SIMPLE, gson.toJson(map));
 	}
 
+	/**
+	 * @functin 查询 键盘精灵
+	 * @param mainID
+	 * @param assID
+	 * @param keyStr
+	 * @return
+	 */
 	public HQResultData reqSearchJSON(int mainID, int assID, String keyStr) {
 
 		Gson gson = new Gson();
@@ -358,6 +458,13 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_SEARCH_REQ, gson.toJson(map));
 	}
 
+	/**
+	 * @functin 单只股票资金�? 1802协议
+	 * @param mainID
+	 * @param assID
+	 * @param keyStr
+	 * @return
+	 */
 	public HQResultData reqFlowsJSON(int mainID, int assID, FlowsReq req) {
 
 		Gson gson = new Gson();
@@ -372,6 +479,14 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_FLOWS_REQ, gson.toJson(map));
 	}
 
+	/**
+	 * 请求码表
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
 	public HQResultData reqDicJSON(int mainID, int assID, FlowsReq req) {
 
 		Gson gson = new Gson();
@@ -382,6 +497,16 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, EMB_DICTIONARY, gson.toJson(map));
 	}
 
+	/**
+	 * 请求资金�?,DDE决策
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @param flag
+	 *            0 资金流向 1 DDE决策
+	 * @return
+	 */
 	public HQResultData reqFundFlowJSON(int mainID, int assID, FlowsReq req, int flag) {
 
 		Gson gson = new Gson();
@@ -403,6 +528,14 @@ public class ClientSock implements Const {
 		return buildJSONREQ(mainID, assID, reqFlag, gson.toJson(map));
 	}
 
+	/**
+	 * @function 多股资金�?
+	 * @param mainID
+	 * @param assID
+	 * @param codehead
+	 * @param wantnum
+	 * @return
+	 */
 	public HQResultData reqMultiDdeJSON(int mainID, int assID, String codehead, short wantnum) {
 
 		Gson gson = new Gson();
@@ -411,6 +544,268 @@ public class ClientSock implements Const {
 		map.put("2", wantnum);
 		map.put("3", codehead);
 		return buildJSONREQ(mainID, assID, MULTI_DDE, gson.toJson(map));
+	}
+
+	/**
+	 * @function 请求行情列表 4400
+	 * @param mainID
+	 * @param assID
+	 * @param request
+	 * @return
+	 */
+	public HQResultData reqNewMultiJSON(int mainID, int assID, MultiReq request) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (null != request.getBlockid() && !"".equals(request.getBlockid().trim())) {
+			// 有blockid 没setdomain 随便设置�?个港美股的setdomain
+			request.setSetdomain(SETDOMAIN_HK);
+		}
+		// （setdomian+blockid）blockid没有的补�?
+		StringBuffer info = new StringBuffer();
+		info.append(request.getSetdomain());
+		if (null == request.getBlockid() || "".equals(request.getBlockid().trim())) {
+			info.append("          ");
+		} else {
+			info.append(request.getBlockid());
+		}
+		map.put("1", StockUtils.getReqid(request.getSetdomain(), request.getBlockid()));
+		map.put("2", request.getSetdomain());
+		map.put("3", request.getColtype());
+		map.put("4", request.getStartxh());
+		map.put("5", request.getWantnum());
+		map.put("6", request.getSorttype());
+		map.put("7", 1);
+		map.put("8", info.toString());
+		return buildJSONREQ(mainID, assID, EMB_MULTIHQ_NREQ_NEW, gson.toJson(map));
+	}
+
+	/**
+	 * @function 请求行情列表�?�? 4410
+	 * @param mainID
+	 * @param assID
+	 * @param request
+	 * @return
+	 */
+	public HQResultData reqNewSimpleMultiJSON(int mainID, int assID, MultiReq request) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (null != request.getBlockid() && !"".equals(request.getBlockid().trim())) {
+			// 有blockid 没setdomain 随便设置�?个港美股的setdomain
+			request.setSetdomain(SETDOMAIN_HK);
+		}
+		// （setdomian+blockid）blockid没有的补�?
+		StringBuffer info = new StringBuffer();
+		info.append(request.getSetdomain());
+		if (null == request.getBlockid() || "".equals(request.getBlockid().trim())) {
+			info.append("          ");
+		} else {
+			info.append(request.getBlockid());
+		}
+		map.put("1", StockUtils.getReqid(request.getSetdomain(), request.getBlockid()));
+		map.put("2", request.getSetdomain());
+		map.put("3", request.getColtype());
+		map.put("4", request.getStartxh());
+		map.put("5", request.getWantnum());
+		map.put("6", request.getSorttype());
+		map.put("7", 1);
+		map.put("8", info.toString());
+		return buildJSONREQ(mainID, assID, EMB_MULTIHQ_NREQ_NEW_SIMPLE, gson.toJson(map));
+	}
+
+	/**
+	 * @function 组合行情同时请求几个股票行情时使�?(可扩展简版组合行�?)4411
+	 * @return
+	 */
+	public HQResultData reqCombExpandJSON(int mainID, int assID, String codehead, short wantnum) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", wantnum);
+		map.put("2", codehead);
+		return buildJSONREQ(mainID, assID, EMB_MULTIHQ_NREQ_EXPAND, gson.toJson(map));
+	}
+
+	/**
+	 * 请求自�?�DDE 4401 （多股DDE查询�?
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqOptionalDDEJSON(int mainID, int assID, FlowsReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", OPTIONAL_DDE);
+		map.put("2", req.getNum());
+		map.put("3", req.getCodehead());
+		return buildJSONREQ(mainID, assID, OPTIONAL_DDE, gson.toJson(map));
+	}
+
+	/**
+	 * 请求自�?�资�?
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqOptionalFundJSON(int mainID, int assID, FlowsReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", OPTIONAL_FUND);
+		map.put("2", req.getNum());
+		map.put("3", req.getCodehead());
+		return buildJSONREQ(mainID, assID, OPTIONAL_FUND, gson.toJson(map));
+	}
+
+	/**
+	 * 拖拉机单个股列表
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqTractorListJSON(int mainID, int assID, MultiReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", TRACTOR_LIST);
+		map.put("2", req.getWantnum());
+		map.put("3", req.getStartxh());
+		map.put("4", req.getSortcol());
+		map.put("5", req.getSorttype());
+		return buildJSONREQ(mainID, assID, TRACTOR_LIST, gson.toJson(map));
+	}
+
+	/**
+	 * 个股拖拉机单明细
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqTractorDetailJSON(int mainID, int assID, MultiReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", TRACTOR_DETAIL);
+		map.put("2", req.getSetCode());
+		map.put("3", req.getCode());
+		map.put("4", req.getWantnum());
+		map.put("5", req.getStartxh());
+		map.put("6", req.getSortcol());
+		map.put("7", req.getSorttype());
+		return buildJSONREQ(mainID, assID, TRACTOR_DETAIL, gson.toJson(map));
+	}
+
+	/**
+	 * 顶级挂单个股列表
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqTopBillListJSON(int mainID, int assID, MultiReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", TOP_BILL_LIST);
+		map.put("2", req.getWantnum());
+		map.put("3", req.getStartxh());
+		map.put("4", req.getSortcol());
+		map.put("5", req.getSorttype());
+		return buildJSONREQ(mainID, assID, TOP_BILL_LIST, gson.toJson(map));
+	}
+
+	/**
+	 * 个股顶级挂单明细
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqTopBillDetailJSON(int mainID, int assID, MultiReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", TOP_BILL_DETAIL);
+		map.put("2", req.getSetCode());
+		map.put("3", req.getCode());
+		map.put("4", req.getWantnum());
+		map.put("5", req.getStartxh());
+		map.put("6", req.getSortcol());
+		map.put("7", req.getSorttype());
+		return buildJSONREQ(mainID, assID, TOP_BILL_DETAIL, gson.toJson(map));
+	}
+
+	/**
+	 * 主力撤单个股列表
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqCancelBillListJSON(int mainID, int assID, MultiReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", CANCEL_BILL_LIST);
+		map.put("2", req.getWantnum());
+		map.put("3", req.getStartxh());
+		map.put("4", req.getSortcol());
+		map.put("5", req.getSorttype());
+		return buildJSONREQ(mainID, assID, CANCEL_BILL_LIST, gson.toJson(map));
+	}
+
+	/**
+	 * 个股主力撤单明细
+	 * 
+	 * @param mainID
+	 * @param assID
+	 * @param req
+	 * @return
+	 */
+	public HQResultData reqCancelBillDetailJSON(int mainID, int assID, MultiReq req) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", CANCEL_BILL_DETAIL);
+		map.put("2", req.getSetCode());
+		map.put("3", req.getCode());
+		map.put("4", req.getWantnum());
+		map.put("5", req.getStartxh());
+		map.put("6", req.getSortcol());
+		map.put("7", req.getSorttype());
+		return buildJSONREQ(mainID, assID, CANCEL_BILL_DETAIL, gson.toJson(map));
+	}
+
+	/**
+	 * @function 请求行情列表�?�? 4409
+	 * @param mainID
+	 * @param assID
+	 * @param request
+	 * @return
+	 */
+	public HQResultData reqAHMultiJSON(int mainID, int assID, MultiReq request) {
+
+		Gson gson = new Gson();
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("1", EMB_MULTIHQ_NREQ_AH);
+		map.put("2", request.getStartxh());
+		map.put("3", request.getWantnum());
+		map.put("4", request.getColtype());
+		map.put("5", request.getSorttype());
+		return buildJSONREQ(mainID, assID, EMB_MULTIHQ_NREQ_AH, gson.toJson(map));
 	}
 
 }
